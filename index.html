@@ -3,215 +3,338 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SQL Utils - Excel与SQL互转工具</title>
+  <title>Excel-SQL 互转工具</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      min-height: 100vh;
       padding: 20px;
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 30px;
-    }
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; color: #89b4fa; font-size: 24px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
     .tab {
       padding: 12px 24px;
-      background: #ddd;
+      background: #313244;
       border: none;
+      border-radius: 8px;
+      color: #cdd6f4;
+      font-size: 14px;
       cursor: pointer;
-      border-radius: 8px 8px 0 0;
-      font-size: 16px;
-      transition: background 0.3s;
+      transition: all 0.2s;
     }
     .tab.active {
-      background: #007bff;
-      color: white;
+      background: #89b4fa;
+      color: #1e1e2e;
+      font-weight: 600;
     }
-    .panel {
-      background: white;
-      padding: 30px;
-      border-radius: 0 8px 8px 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .form-group {
+    .panel { display: none; background: #313244; border-radius: 12px; padding: 24px; }
+    .panel.active { display: block; }
+    .drop-zone {
+      border: 2px dashed #6c7086;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      transition: all 0.2s;
+      cursor: pointer;
       margin-bottom: 20px;
     }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #333;
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #89b4fa;
+      background: rgba(137, 180, 250, 0.1);
     }
-    input, select, textarea {
+    .drop-zone input { display: none; }
+    .drop-zone p { color: #6c7086; font-size: 14px; }
+    .drop-zone .icon { font-size: 48px; margin-bottom: 10px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-size: 13px; color: #a6adc8; }
+    select, input, textarea {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
+      padding: 10px 12px;
+      background: #45475a;
+      border: 1px solid #585b70;
       border-radius: 6px;
+      color: #cdd6f4;
       font-size: 14px;
     }
-    textarea {
-      min-height: 300px;
-      font-family: 'Consolas', monospace;
-      resize: vertical;
-    }
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    button {
+    textarea { min-height: 120px; font-family: monospace; resize: vertical; }
+    select:focus, input:focus, textarea:focus { outline: none; border-color: #89b4fa; }
+    .btn {
       padding: 12px 24px;
+      background: #89b4fa;
+      color: #1e1e2e;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      border-radius: 8px;
       font-size: 14px;
-      transition: background 0.3s;
-    }
-    .btn-primary {
-      background: #007bff;
-      color: white;
-    }
-    .btn-primary:hover {
-      background: #0056b3;
-    }
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-    .btn-secondary:hover {
-      background: #545b62;
-    }
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-    .btn-success:hover {
-      background: #1e7e34;
-    }
-    .file-info {
-      padding: 15px;
-      background: #e9ecef;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-    .file-info .name {
       font-weight: 600;
-      color: #333;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-    .preview {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 6px;
-      max-height: 200px;
-      overflow-y: auto;
+    .btn:hover { background: #b4befe; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-success { background: #a6e3a1; color: #1e1e2e; }
+    .btn-success:hover { background: #94d2bd; }
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .info { font-size: 12px; color: #6c7086; margin-top: 4px; }
+    .output {
+      background: #45475a;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      max-height: 400px;
+      overflow: auto;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
     }
-    .preview table {
+    .preview-table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 12px;
     }
-    .preview th, .preview td {
-      border: 1px solid #ddd;
+    .preview-table th, .preview-table td {
+      border: 1px solid #585b70;
       padding: 8px;
       text-align: left;
     }
-    .preview th {
-      background: #007bff;
-      color: white;
-    }
-    .sql-type-group {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .sql-type-group label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-weight: normal;
-    }
+    .preview-table th { background: #45475a; }
+    .preview-table tr:nth-child(even) td { background: rgba(69, 71, 90, 0.5); }
+    .file-name { color: #a6e3a1; font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>SQL Utils - Excel与SQL互转工具</h1>
+    <h1>Excel-SQL 互转工具</h1>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('excel2sql')">Excel → SQL</button>
-      <button class="tab" onclick="switchTab('sql2excel')">SQL → Excel</button>
+      <button class="tab active" data-tab="excel-sql">Excel → SQL</button>
+      <button class="tab" data-tab="sql-excel">SQL → Excel</button>
     </div>
 
-    <!-- Excel to SQL Panel -->
-    <div id="excel2sql-panel" class="panel">
-      <h2>Excel 转 SQL</h2>
-
-      <div class="form-group">
-        <label>选择 Excel 文件:</label>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="selectExcelFile()">选择文件</button>
-        </div>
-        <div id="excel-info" class="file-info" style="display:none;"></div>
+    <!-- Excel 转 SQL -->
+    <div id="excel-sql" class="panel active">
+      <div class="drop-zone" id="drop1">
+        <div class="icon">📁</div>
+        <p>将 Excel 文件拖拽到此处，或点击选择文件</p>
+        <p class="info">支持 .xlsx, .xls 文件</p>
+        <input type="file" accept=".xlsx,.xls" id="file1">
       </div>
 
-      <div id="excel-preview" class="preview" style="display:none;"></div>
-
-      <div class="sql-type-group">
-        <label><input type="radio" name="sqlType" value="INSERT" checked> INSERT</label>
-        <label><input type="radio" name="sqlType" value="UPDATE"> UPDATE</label>
-        <label><input type="radio" name="sqlType" value="DELETE"> DELETE</label>
+      <div id="file-info" style="display:none; margin-bottom: 16px; padding: 12px; background: #45475a; border-radius: 8px;">
+        已选择: <span class="file-name" id="file-name-display"></span>
       </div>
 
       <div class="form-group">
-        <label for="tableName">表名:</label>
-        <input type="text" id="tableName" placeholder="输入表名，例如: users">
+        <label>表名</label>
+        <input type="text" id="tableName" placeholder="例如: users" value="my_table">
       </div>
 
       <div class="form-group">
-        <label for="excel-output">生成的 SQL:</label>
-        <textarea id="excel-output" placeholder="生成的 SQL 语句将显示在这里..."></textarea>
+        <label>操作类型</label>
+        <select id="sqlType">
+          <option value="INSERT">INSERT (插入)</option>
+          <option value="UPDATE">UPDATE (更新)</option>
+          <option value="DELETE">DELETE (删除)</option>
+        </select>
       </div>
 
-      <div class="btn-row">
-        <button class="btn-primary" onclick="excelToSql()">生成 SQL</button>
-        <button class="btn-success" onclick="saveSql()">保存 SQL 文件</button>
-        <button class="btn-secondary" onclick="copySql()">复制</button>
-      </div>
+      <button class="btn" id="genSqlBtn" disabled>生成 SQL</button>
+      <button class="btn btn-success" id="downloadSqlBtn" style="display:none;">下载 SQL 文件</button>
+
+      <div class="output" id="sqlOutput" style="display:none;"></div>
     </div>
 
-    <!-- SQL to Excel Panel -->
-    <div id="sql2excel-panel" class="panel" style="display:none;">
-      <h2>SQL 转 Excel</h2>
+    <!-- SQL 转 Excel -->
+    <div id="sql-excel" class="panel">
+      <div class="form-group">
+        <label>粘贴 SQL INSERT 语句</label>
+        <textarea id="sqlInput" rows="8" placeholder="粘贴你的 INSERT 语句，例如:
+INSERT INTO users (name, email, age) VALUES ('张三', 'zhangsan@example.com', 25);
+INSERT INTO users (name, email, age) VALUES ('李四', 'lisi@example.com', 30);"></textarea>
+      </div>
 
       <div class="form-group">
-        <label for="sql-input">粘贴 SQL 语句:</label>
-        <textarea id="sql-input" placeholder="粘贴 INSERT INTO 语句，例如: INSERT INTO users (name, email) VALUES ('张三', 'zhangsan@example.com');"></textarea>
+        <label>Excel 文件名</label>
+        <input type="text" id="excelName" placeholder="例如: output" value="output">
       </div>
 
-      <div class="btn-row">
-        <button class="btn-primary" onclick="sqlToExcel()">解析并生成 Excel</button>
-        <button class="btn-success" onclick="exportExcel()">导出 Excel 文件</button>
-        <button class="btn-secondary" onclick="clearSql()">清空</button>
-      </div>
+      <button class="btn" id="genExcelBtn">生成 Excel</button>
+      <button class="btn btn-success" id="downloadExcelBtn" style="display:none;">下载 Excel</button>
 
-      <div id="sql-preview" class="preview" style="display:none;"></div>
+      <div class="preview-table" id="previewTable" style="display:none;"></div>
     </div>
   </div>
 
-  <script src="renderer.js"></script>
+  <script>
+    // Tab 切换
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Excel → SQL
+    let workbookData = null;
+
+    function setupDropZone(dropZone, input) {
+      dropZone.addEventListener('click', () => input.click());
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) loadExcelFile(file);
+      });
+      input.addEventListener('change', e => { if (e.target.files[0]) loadExcelFile(e.target.files[0]); });
+    }
+
+    function loadExcelFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        workbookData = XLSX.read(e.target.result, { type: 'array' });
+        document.getElementById('file-info').style.display = 'block';
+        document.getElementById('file-name-display').textContent = file.name;
+        document.getElementById('genSqlBtn').disabled = false;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    setupDropZone(document.getElementById('drop1'), document.getElementById('file1'));
+
+    document.getElementById('genSqlBtn').addEventListener('click', () => {
+      if (!workbookData) return;
+      const tableName = document.getElementById('tableName').value.trim() || 'my_table';
+      const sqlType = document.getElementById('sqlType').value;
+      const sheet = workbookData.Sheets[workbookData.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      if (data.length < 2) {
+        alert('Excel 文件至少需要包含标题行和一行数据');
+        return;
+      }
+
+      const headers = data[0].map(h => String(h).trim());
+      const rows = data.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== null && cell !== ''));
+      let sql = '';
+
+      if (sqlType === 'INSERT') {
+        rows.forEach(row => {
+          const values = headers.map((_, i) => {
+            const val = row[i];
+            if (val === undefined || val === null) return 'NULL';
+            if (typeof val === 'number') return val;
+            if (typeof val === 'boolean') return val ? 1 : 0;
+            return "'" + String(val).replace(/'/g, "''") + "'";
+          });
+          sql += `INSERT INTO ${tableName} (${headers.join(', ')}) VALUES (${values.join(', ')});\n`;
+        });
+      } else if (sqlType === 'UPDATE') {
+        if (headers.length < 2) {
+          alert('UPDATE 模式需要至少 2 列（第一列作为 WHERE 条件）');
+          return;
+        }
+        const keyCol = headers[0];
+        rows.forEach(row => {
+          const sets = headers.slice(1).map((h, i) => {
+            const val = row[i + 1];
+            if (val === undefined || val === null) return `${h} = NULL`;
+            if (typeof val === 'number') return `${h} = ${val}`;
+            return `${h} = '${String(val).replace(/'/g, "''")}'`;
+          });
+          const keyVal = row[0];
+          sql += `UPDATE ${tableName} SET ${sets.join(', ')} WHERE ${keyCol} = '${keyVal}';\n`;
+        });
+      } else if (sqlType === 'DELETE') {
+        const keyCol = headers[0];
+        rows.forEach(row => {
+          const val = row[0];
+          sql += `DELETE FROM ${tableName} WHERE ${keyCol} = '${val}';\n`;
+        });
+      }
+
+      const output = document.getElementById('sqlOutput');
+      output.textContent = sql;
+      output.style.display = 'block';
+      document.getElementById('downloadSqlBtn').style.display = 'inline-block';
+    });
+
+    document.getElementById('downloadSqlBtn').addEventListener('click', () => {
+      const sql = document.getElementById('sqlOutput').textContent;
+      const blob = new Blob([sql], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (document.getElementById('tableName').value || 'output') + '.sql';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // SQL → Excel
+    document.getElementById('genExcelBtn').addEventListener('click', () => {
+      const sqlText = document.getElementById('sqlInput').value.trim();
+      if (!sqlText) {
+        alert('请先粘贴 SQL 语句');
+        return;
+      }
+
+      const insertRegex = /INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi;
+      const rows = [];
+      let headers = null;
+
+      let match;
+      while ((match = insertRegex.exec(sqlText)) !== null) {
+        if (!headers) {
+          headers = match[2].split(',').map(h => h.trim());
+        }
+        const values = match[3].split(',').map(v => {
+          v = v.trim();
+          if (v === 'NULL') return null;
+          if (v.startsWith("'") && v.endsWith("'")) {
+            return v.slice(1, -1).replace(/''/g, "'");
+          }
+          if (!isNaN(v)) return Number(v);
+          return v;
+        });
+        rows.push(values);
+      }
+
+      if (rows.length === 0) {
+        alert('未找到有效的 INSERT 语句');
+        return;
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Data');
+
+      const previewTable = document.getElementById('previewTable');
+      let html = '<tr><th>' + headers.join('</th><th>') + '</th></tr>';
+      rows.slice(0, 5).forEach(row => {
+        html += '<tr><td>' + row.map(v => v === null ? 'NULL' : String(v)).join('</td><td>') + '</td></tr>';
+      });
+      if (rows.length > 5) html += '<tr><td colspan="' + headers.length + '" style="text-align:center;color:#6c7086;">... 共 ' + rows.length + ' 行</td></tr>';
+      previewTable.innerHTML = html;
+      previewTable.style.display = 'table';
+
+      window._excelWb = wb;
+      document.getElementById('downloadExcelBtn').style.display = 'inline-block';
+    });
+
+    document.getElementById('downloadExcelBtn').addEventListener('click', () => {
+      if (!window._excelWb) return;
+      const name = document.getElementById('excelName').value.trim() || 'output';
+      XLSX.writeFile(window._excelWb, name + '.xlsx');
+    });
+  </script>
 </body>
 </html>
