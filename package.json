@@ -1,0 +1,34 @@
+{
+  "name": "sql-utils",
+  "version": "1.0.0",
+  "description": "Excel to SQL and SQL to Excel converter",
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "sql-parser": "^0.5.0"
+  },
+  "build": {
+    "appId": "com.sqlutils.app",
+    "productName": "SQL Utils",
+    "mac": {
+      "target": "dmg"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer.js"
+    ]
+  }
+}

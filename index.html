@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Utils - Excel与SQL互转工具</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: #ddd;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    .tab.active {
+      background: #007bff;
+      color: white;
+    }
+    .panel {
+      background: white;
+      padding: 30px;
+      border-radius: 0 8px 8px 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    textarea {
+      min-height: 300px;
+      font-family: 'Consolas', monospace;
+      resize: vertical;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #1e7e34;
+    }
+    .file-info {
+      padding: 15px;
+      background: #e9ecef;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    .file-info .name {
+      font-weight: 600;
+      color: #333;
+    }
+    .preview {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .preview table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .preview th, .preview td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .preview th {
+      background: #007bff;
+      color: white;
+    }
+    .sql-type-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .sql-type-group label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SQL Utils - Excel与SQL互转工具</h1>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('excel2sql')">Excel → SQL</button>
+      <button class="tab" onclick="switchTab('sql2excel')">SQL → Excel</button>
+    </div>
+
+    <!-- Excel to SQL Panel -->
+    <div id="excel2sql-panel" class="panel">
+      <h2>Excel 转 SQL</h2>
+
+      <div class="form-group">
+        <label>选择 Excel 文件:</label>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="selectExcelFile()">选择文件</button>
+        </div>
+        <div id="excel-info" class="file-info" style="display:none;"></div>
+      </div>
+
+      <div id="excel-preview" class="preview" style="display:none;"></div>
+
+      <div class="sql-type-group">
+        <label><input type="radio" name="sqlType" value="INSERT" checked> INSERT</label>
+        <label><input type="radio" name="sqlType" value="UPDATE"> UPDATE</label>
+        <label><input type="radio" name="sqlType" value="DELETE"> DELETE</label>
+      </div>
+
+      <div class="form-group">
+        <label for="tableName">表名:</label>
+        <input type="text" id="tableName" placeholder="输入表名，例如: users">
+      </div>
+
+      <div class="form-group">
+        <label for="excel-output">生成的 SQL:</label>
+        <textarea id="excel-output" placeholder="生成的 SQL 语句将显示在这里..."></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="excelToSql()">生成 SQL</button>
+        <button class="btn-success" onclick="saveSql()">保存 SQL 文件</button>
+        <button class="btn-secondary" onclick="copySql()">复制</button>
+      </div>
+    </div>
+
+    <!-- SQL to Excel Panel -->
+    <div id="sql2excel-panel" class="panel" style="display:none;">
+      <h2>SQL 转 Excel</h2>
+
+      <div class="form-group">
+        <label for="sql-input">粘贴 SQL 语句:</label>
+        <textarea id="sql-input" placeholder="粘贴 INSERT INTO 语句，例如: INSERT INTO users (name, email) VALUES ('张三', 'zhangsan@example.com');"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="sqlToExcel()">解析并生成 Excel</button>
+        <button class="btn-success" onclick="exportExcel()">导出 Excel 文件</button>
+        <button class="btn-secondary" onclick="clearSql()">清空</button>
+      </div>
+
+      <div id="sql-preview" class="preview" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
